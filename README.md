@@ -1,5 +1,5 @@
 # Wine Quality Data Analysis
-
+![Python Tests](https://github.com/qurbanovkenan77-tech/wine-quality-analysis/actions/workflows/tests.yml/badge.svg)
 ## Project Overview
 
 This project analyzes the Wine Quality dataset using Python. The dataset contains information about red and white wines and includes chemical properties such as acidity, pH, sulphates, alcohol content, and wine quality ratings.
@@ -140,6 +140,10 @@ The repository contains:
 - `wine_quality_distribution.png` - Wine quality visualization
 - `rust_vs_python_intro.ipynb` - Modified Rust Jupyter notebook
 - `README.md` - Project documentation
+- `test_analysis.py` - Automated tests for the analysis workflow
+- `requirements.txt` - Python dependencies
+- `.github/workflows/tests.yml` - GitHub Actions CI workflow
+- `tests_passed.png` - Screenshot showing successful test results
 
 ## Tools and Libraries
 
@@ -152,6 +156,28 @@ The project uses:
 - Scikit-learn
 - Rust
 - Jupyter Notebook
+
+## Testing
+
+The project includes automated tests using `pytest` to validate the main components of the data analysis workflow.
+
+The tests cover:
+
+- Loading the wine quality dataset
+- Filtering high-quality wines
+- Calculating average quality by wine type
+- Training and evaluating the linear regression model
+- Running the main components together as a complete workflow
+
+All five tests pass successfully.
+
+![All Tests Passing](tests_passed.png)
+
+## Continuous Integration
+
+GitHub Actions is configured to automatically run the test suite whenever changes are pushed to the `main` branch or submitted through a pull request.
+
+The workflow installs the required Python dependencies and runs the tests using `pytest`. The CI status badge at the top of this README shows the current status of the automated test workflow.
 
 ## Conclusion
 
