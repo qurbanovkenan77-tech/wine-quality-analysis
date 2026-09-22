@@ -1,3 +1,4 @@
+# importing necessary libraries
 import time
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -6,73 +7,95 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 
-start = time.perf_counter()
 
-df = pd.read_csv("wine_quality_merged.csv")
+# functions for testing
 
-end = time.perf_counter()
+def load_data(filename="wine_quality_merged.csv"):
+    return pd.read_csv(filename)
 
-print("\nPandas CSV Load Time:")
-print(end - start)
 
-print(df.head())
+def get_high_quality_wines(df):
+    return df[df["quality"] >= 7]
 
-# inspect the data
-print("\nDataset Information:")
-df.info()
 
-print("\nSummary Statistics:")
-print(df.describe())
+def get_average_quality(df):
+    return df.groupby("type")["quality"].mean()
 
-print("\nMissing Values:")
-print(df.isnull().sum())
 
-print("\nNumber of Duplicates:")
-print(df.duplicated().sum())
+def train_model(df):
+    # input and output
+    X = df[["alcohol"]]
+    y = df["quality"]
 
-# basic filtering and grouping
-start = time.perf_counter()
+    # split the data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
 
-high_quality = df[df["quality"] >= 7]
-average_quality = df.groupby("type")["quality"].mean()
+    # create and train the model
+    model = LinearRegression()
+    model.fit(X_train, y_train)
 
-end = time.perf_counter()
+    # make predictions
+    predictions = model.predict(X_test)
 
-print("\nPandas Analysis Time:")
-print(end - start)
+    # evaluate the model
+    mse = mean_squared_error(y_test, predictions)
 
-# visualization
-plt.hist(df["quality"], bins=6, edgecolor="black")
+    return model, mse
 
-plt.xlabel("Wine Quality")
-plt.ylabel("Number of Wines")
-plt.title("Distribution of Wine Quality")
 
-plt.savefig("wine_quality_distribution.png")
-plt.close()
+if __name__ == "__main__":
 
-# machine learning
+    start = time.perf_counter()
 
-# input and output
-X = df[["alcohol"]]
-y = df["quality"]
+    df = load_data("wine_quality_merged.csv")
 
-# split the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
+    end = time.perf_counter()
 
-# create and train the model
-model = LinearRegression()
-model.fit(X_train, y_train)
+    print("\nPandas CSV Load Time:")
+    print(end - start)
 
-# make predictions
-predictions = model.predict(X_test)
+    print(df.head())
 
-# evaluate the model
-mse = mean_squared_error(y_test, predictions)
+    # inspect the data
+    print("\nDataset Information:")
+    df.info()
 
-print("\nMachine Learning - Linear Regression")
-print("Input: Alcohol")
-print("Output: Quality")
-print("Mean Squared Error:", mse)
+    print("\nSummary Statistics:")
+    print(df.describe())
+
+    print("\nMissing Values:")
+    print(df.isnull().sum())
+
+    print("\nNumber of Duplicates:")
+    print(df.duplicated().sum())
+
+    # basic filtering and grouping
+    start = time.perf_counter()
+
+    high_quality = get_high_quality_wines(df)
+    average_quality = get_average_quality(df)
+
+    end = time.perf_counter()
+
+    print("\nPandas Analysis Time:")
+    print(end - start)
+
+    # visualization
+    plt.hist(df["quality"], bins=6, edgecolor="black")
+
+    plt.xlabel("Wine Quality")
+    plt.ylabel("Number of Wines")
+    plt.title("Distribution of Wine Quality")
+
+    plt.savefig("wine_quality_distribution.png")
+    plt.close()
+
+    # machine learning
+    model, mse = train_model(df)
+
+    print("\nMachine Learning - Linear Regression")
+    print("Input: Alcohol")
+    print("Output: Quality")
+    print("Mean Squared Error:", mse)
