@@ -185,4 +185,4 @@ This project explored the Wine Quality dataset using Pandas and Polars. The anal
 
 A simple linear regression model was also used to predict wine quality based on alcohol content. In addition, Pandas and Polars were compared using execution time. For this relatively small dataset, Pandas was faster in the measured operations.
 
-Finally, the Rust Jupyter notebook was modified to experiment with ownership and borrowing, providing practical examples of how Rust manages values and memory.
+Finally, the Rust Jupyter notebook was modified to experiment with ownership and borrowing, providing practical examples of how Rust manages values and memory. 
