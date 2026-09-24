@@ -1,5 +1,7 @@
 # Wine Quality Data Analysis
+
 ![Python Tests](https://github.com/qurbanovkenan77-tech/wine-quality-analysis/actions/workflows/tests.yml/badge.svg)
+
 ## Project Overview
 
 This project analyzes the Wine Quality dataset using Python. The dataset contains information about red and white wines and includes chemical properties such as acidity, pH, sulphates, alcohol content, and wine quality ratings.
@@ -34,9 +36,7 @@ Some of the variables include:
 
 ## Pandas Analysis
 
-The Pandas analysis is contained in:
-
-`analysis.py`
+The Pandas analysis is contained in `analysis.py`.
 
 The script performs several basic data analysis operations:
 
@@ -66,7 +66,7 @@ The average quality scores were:
 - Red wine: approximately 5.636
 - White wine: approximately 5.878
 
-White wine therefore had a slightly higher average quality score in this dataset.
+White wine therefore had a slightly higher average quality score than red wine in this dataset.
 
 ## Data Visualization
 
@@ -95,9 +95,7 @@ This model provides a simple example of using a wine characteristic to predict w
 
 ## Pandas vs Polars
 
-The same filtering and grouping analysis was performed using Polars in:
-
-`polars_analysis.py`
+The same filtering and grouping analysis was performed using Polars in `polars_analysis.py`.
 
 Execution time was measured using Python's `time.perf_counter()`.
 
@@ -139,11 +137,11 @@ The repository contains:
 - `wine_quality_merged.csv` - Wine Quality dataset
 - `wine_quality_distribution.png` - Wine quality visualization
 - `rust_vs_python_intro.ipynb` - Modified Rust Jupyter notebook
-- `README.md` - Project documentation
 - `test_analysis.py` - Automated tests for the analysis workflow
 - `requirements.txt` - Python dependencies
 - `.github/workflows/tests.yml` - GitHub Actions CI workflow
 - `tests_passed.png` - Screenshot showing successful test results
+- `README.md` - Project documentation
 
 ## Tools and Libraries
 
@@ -154,8 +152,47 @@ The project uses:
 - Polars
 - Matplotlib
 - Scikit-learn
+- pytest
 - Rust
 - Jupyter Notebook
+- GitHub Actions
+
+## Setup and Installation
+
+To run this project locally, clone the repository and install the required Python dependencies.
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/qurbanovkenan77-tech/wine-quality-analysis.git
+cd wine-quality-analysis
+```
+
+### 2. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Run the Pandas Analysis
+
+```bash
+python analysis.py
+```
+
+### 4. Run the Polars Analysis
+
+```bash
+python polars_analysis.py
+```
+
+### 5. Run the Tests
+
+```bash
+pytest -v
+```
+
+The required Python packages are listed in `requirements.txt`.
 
 ## Testing
 
@@ -169,7 +206,7 @@ The tests cover:
 - Training and evaluating the linear regression model
 - Running the main components together as a complete workflow
 
-All five tests pass successfully.
+The project contains four core functionality tests and one complete workflow test. All five tests pass successfully.
 
 ![All Tests Passing](tests_passed.png)
 
@@ -177,7 +214,14 @@ All five tests pass successfully.
 
 GitHub Actions is configured to automatically run the test suite whenever changes are pushed to the `main` branch or submitted through a pull request.
 
-The workflow installs the required Python dependencies and runs the tests using `pytest`. The CI status badge at the top of this README shows the current status of the automated test workflow.
+The workflow:
+
+- Checks out the repository
+- Sets up Python
+- Installs the dependencies from `requirements.txt`
+- Runs the automated tests using `pytest`
+
+The CI status badge at the top of this README shows the current status of the automated test workflow.
 
 ## Conclusion
 
@@ -185,4 +229,6 @@ This project explored the Wine Quality dataset using Pandas and Polars. The anal
 
 A simple linear regression model was also used to predict wine quality based on alcohol content. In addition, Pandas and Polars were compared using execution time. For this relatively small dataset, Pandas was faster in the measured operations.
 
-Finally, the Rust Jupyter notebook was modified to experiment with ownership and borrowing, providing practical examples of how Rust manages values and memory. 
+The project was also made reproducible and reliable by adding automated testing with pytest and continuous integration with GitHub Actions.
+
+Finally, the Rust Jupyter notebook was modified to experiment with ownership and borrowing, providing practical examples of how Rust manages values and memory.
