@@ -1,64 +1,34 @@
-# importing necessary libraries
-import time
-import pandas as pd
-import matplotlib.pyplot as plt
+"""Analyze wine quality using Pandas and linear regression."""
 
-from sklearn.model_selection import train_test_split
+import time
+
+import matplotlib.pyplot as plt
+import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import train_test_split
 
-
-# functions for testing
 
 def load_data(filename="wine_quality_merged.csv"):
+    """Load the wine dataset from a CSV file."""
     return pd.read_csv(filename)
 
 
 def get_high_quality_wines(df):
-    return df[df["quality"] >= 7]
+    """Return wines with a quality score of at least 7."""
+    return df.loc[df["quality"] >= 7].copy()
 
 
 def get_average_quality(df):
+    """Calculate the mean quality score for each wine type."""
     return df.groupby("type")["quality"].mean()
 
 
-def train_model(df):
-    # input and output
-    X = df[["alcohol"]]
-    y = df["quality"]
-
-    # split the data into training and testing sets
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
-
-    # create and train the model
-    model = LinearRegression()
-    model.fit(X_train, y_train)
-
-    # make predictions
-    predictions = model.predict(X_test)
-
-    # evaluate the model
-    mse = mean_squared_error(y_test, predictions)
-
-    return model, mse
-
-
-if __name__ == "__main__":
-
-    start = time.perf_counter()
-
-    df = load_data("wine_quality_merged.csv")
-
-    end = time.perf_counter()
-
-    print("\nPandas CSV Load Time:")
-    print(end - start)
-
+def inspect_data(df):
+    """Print dataset structure and basic data-quality checks."""
+    print("\nFirst Five Rows:")
     print(df.head())
 
-    # inspect the data
     print("\nDataset Information:")
     df.info()
 
@@ -66,36 +36,78 @@ if __name__ == "__main__":
     print(df.describe())
 
     print("\nMissing Values:")
-    print(df.isnull().sum())
+    print(df.isna().sum())
 
-    print("\nNumber of Duplicates:")
+    print("\nNumber of Duplicate Rows:")
     print(df.duplicated().sum())
 
-    # basic filtering and grouping
-    start = time.perf_counter()
 
+def plot_quality_distribution(df, filename="wine_quality_distribution.png"):
+    """Save a histogram of wine quality scores."""
+    fig, ax = plt.subplots()
+
+    ax.hist(df["quality"], bins=6, edgecolor="black")
+    ax.set_xlabel("Wine Quality")
+    ax.set_ylabel("Number of Wines")
+    ax.set_title("Distribution of Wine Quality")
+
+    fig.tight_layout()
+    fig.savefig(filename)
+    plt.close(fig)
+
+
+def train_model(df):
+    """Fit an alcohol-only regression and return the model and test MSE."""
+    features = df[["alcohol"]]
+    target = df["quality"]
+
+    features_train, features_test, target_train, target_test = train_test_split(
+        features,
+        target,
+        test_size=0.2,
+        random_state=42,
+    )
+
+    model = LinearRegression()
+    model.fit(features_train, target_train)
+
+    predictions = model.predict(features_test)
+    mse = mean_squared_error(target_test, predictions)
+
+    return model, mse
+
+
+def main():
+    """Run data inspection, summary analysis, plotting, and modeling."""
+    start = time.perf_counter()
+    df = load_data()
+    load_time = time.perf_counter() - start
+
+    print(f"\nPandas CSV Load Time: {load_time:.6f} seconds")
+    inspect_data(df)
+
+    start = time.perf_counter()
     high_quality = get_high_quality_wines(df)
     average_quality = get_average_quality(df)
+    analysis_time = time.perf_counter() - start
 
-    end = time.perf_counter()
+    print(f"\nPandas Analysis Time: {analysis_time:.6f} seconds")
 
-    print("\nPandas Analysis Time:")
-    print(end - start)
+    print("\nNumber of High Quality Wines:")
+    print(len(high_quality))
 
-    # visualization
-    plt.hist(df["quality"], bins=6, edgecolor="black")
+    print("\nAverage Quality by Wine Type:")
+    print(average_quality)
 
-    plt.xlabel("Wine Quality")
-    plt.ylabel("Number of Wines")
-    plt.title("Distribution of Wine Quality")
+    plot_quality_distribution(df)
 
-    plt.savefig("wine_quality_distribution.png")
-    plt.close()
-
-    # machine learning
-    model, mse = train_model(df)
+    _, mse = train_model(df)
 
     print("\nMachine Learning - Linear Regression")
     print("Input: Alcohol")
     print("Output: Quality")
-    print("Mean Squared Error:", mse)
+    print(f"Mean Squared Error: {mse:.4f}")
+
+
+if __name__ == "__main__":
+    main()
