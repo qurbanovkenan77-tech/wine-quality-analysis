@@ -1,234 +1,197 @@
-# Wine Quality Data Analysis
+# Wine Quality Analysis
 
-![Python Tests](https://github.com/qurbanovkenan77-tech/wine-quality-analysis/actions/workflows/tests.yml/badge.svg)
+[![Python Tests](https://github.com/qurbanovkenan77-tech/wine-quality-analysis/actions/workflows/tests.yml/badge.svg)](https://github.com/qurbanovkenan77-tech/wine-quality-analysis/actions/workflows/tests.yml)
 
-## Project Overview
+## Project Question
 
-This project analyzes the Wine Quality dataset using Python. The dataset contains information about red and white wines and includes chemical properties such as acidity, pH, sulphates, alcohol content, and wine quality ratings.
+How useful is alcohol content for predicting wine quality, and is its relationship with quality similar for red and white wines?
 
-The project uses Pandas for data analysis, Matplotlib for visualization, and Scikit-learn for a simple machine learning model. Polars is also used to perform similar data analysis operations and compare its performance with Pandas.
+Wine quality ratings reflect more than a single chemical measurement. This project explores whether alcohol content provides useful predictive information while recognizing that it cannot fully explain wine quality or replace sensory evaluation.
 
-A Rust Jupyter notebook is also included to experiment with Rust concepts such as ownership and borrowing.
+The project includes data preparation, visualizations, an alcohol-only regression model, a baseline comparison, automated tests, GitHub Actions, and Docker.
 
 ## Dataset
 
-The dataset used in this project is `wine_quality_merged.csv`.
+Source: [Red and White Wine Quality on Kaggle](https://www.kaggle.com/datasets/amirmohamadrezaie/red-and-white-wine-quality)
 
-The dataset contains:
+The original file, `wine_quality_merged.csv`, contains:
 
-- 6,497 rows
-- 13 columns
-- Red and white wines
-- Wine quality scores ranging from 3 to 9
+- 6,497 rows and 13 columns.
+- 1,599 red wines and 4,898 white wines.
+- 11 chemical measurements, a quality score, and wine type.
+- Observed quality scores from 3 to 9.
+- No missing values.
 
-Some of the variables include:
+The original CSV is preserved unchanged.
 
-- Fixed acidity
-- Volatile acidity
-- Citric acid
-- Residual sugar
-- Chlorides
-- pH
-- Sulphates
-- Alcohol
-- Quality
-- Wine type
+## Data Preparation
 
-## Pandas Analysis
+The main Pandas analysis removes 1,177 exact duplicate rows, leaving 5,320 unique records: 1,359 red wines and 3,961 white wines.
 
-The Pandas analysis is contained in `analysis.py`.
+Duplicates are removed before the train/test split to prevent identical complete records from appearing in both sets. Without sample identifiers, it is not possible to determine whether identical records represent repeated entries or separate samples with identical measurements. Removing them is a documented analysis choice.
 
-The script performs several basic data analysis operations:
+Validation checks required columns, empty datasets, missing values, numeric alcohol and quality fields, allowed wine types, and valid alcohol and quality ranges. Invalid input raises an error rather than being silently processed.
 
-- Loads the wine quality dataset
-- Displays the first five rows
-- Examines dataset information and data types
-- Generates summary statistics
-- Checks for missing values
-- Checks for duplicate rows
-- Filters wines with a quality score of 7 or higher
-- Calculates average wine quality by wine type
-- Creates a visualization of wine quality
-- Builds a simple linear regression model
+Potential outliers are flagged using the 1.5 × IQR rule separately for each wine type and chemical feature. They are retained because an unusual value is not necessarily a measurement error. Quality scores are excluded from this outlier check. Counts are per feature, so one wine can be flagged more than once.
 
-### Analysis Results
+## Key Findings
 
-There are 6,497 wines in the dataset.
+Results below use the cleaned dataset.
 
-There are no missing values in the dataset.
+| Wine type | Records | Mean quality | Alcohol–quality correlation |
+|---|---:|---:|---:|
+| Red | 1,359 | 5.6233 | 0.4803 |
+| White | 3,961 | 5.8548 | 0.4629 |
 
-Using Pandas, 1,177 duplicate rows were identified.
+- 1,009 wines have a quality score of at least 7, the threshold used here to describe high-quality wines.
+- White wines have a slightly higher average rating in this dataset.
+- Alcohol and quality have a moderate positive association for both wine types.
+- The two correlations are similar. No statistical test of their difference was performed.
 
-There are 1,277 wines with a quality score of 7 or higher.
+These are associations, not evidence that increasing alcohol causes better wine quality.
 
-The average quality scores were:
+## Visualizations
 
-- Red wine: approximately 5.636
-- White wine: approximately 5.878
+Most wines receive middle-range quality scores.
 
-White wine therefore had a slightly higher average quality score than red wine in this dataset.
+![Wine quality distribution](wine_quality_distribution.png)
 
-## Data Visualization
+The boxplots compare alcohol distributions across quality scores for red and white wines. Rare quality scores have fewer observations and should be interpreted cautiously.
 
-The project creates a histogram showing the distribution of wine quality scores.
+![Alcohol by quality and wine type](alcohol_by_quality.png)
 
-![Distribution of Wine Quality](wine_quality_distribution.png)
+## Model Evaluation
 
-The majority of wines have quality ratings around 5 and 6, while very low and very high quality scores occur less frequently.
+An alcohol-only linear regression is compared with a baseline that predicts the training-set mean quality for every test observation.
 
-## Machine Learning
+Both models use the same 80/20 split of the cleaned data, with `random_state=42`: 4,256 training rows and 1,064 test rows.
 
-A simple linear regression model was created using Scikit-learn.
+| Model | MSE | RMSE | MAE | R² |
+|---|---:|---:|---:|---:|
+| Training-mean baseline | 0.7527 | 0.8676 | 0.6942 | -0.0011 |
+| Alcohol regression | 0.5861 | 0.7656 | 0.6009 | 0.2204 |
 
-The model uses:
+The regression reduces test MSE by **22.13%** relative to the baseline. Its average absolute error is approximately **0.60 quality-score points**.
 
-- Input variable: Alcohol
-- Output variable: Wine Quality
+Alcohol provides useful predictive information, but substantial variation remains unexplained. Results come from one fixed split, not cross-validation. The model treats an ordinal quality score as continuous, uses only one predictor, and is intended as an educational analysis rather than a production rating system.
 
-The dataset was divided into training and testing sets using an 80/20 split.
+Saved results:
 
-The Mean Squared Error (MSE) of the model was:
-
-`0.6044`
-
-This model provides a simple example of using a wine characteristic to predict wine quality.
-
-## Pandas vs Polars
-
-The same filtering and grouping analysis was performed using Polars in `polars_analysis.py`.
-
-Execution time was measured using Python's `time.perf_counter()`.
-
-| Operation | Pandas | Polars |
-|---|---:|---:|
-| CSV Load | 0.00412 seconds | 0.01047 seconds |
-| Filtering + Grouping | 0.00104 seconds | 0.01478 seconds |
-
-In this run, Pandas was faster than Polars for both loading the CSV file and performing the filtering and grouping operations.
-
-The dataset contains only 6,497 rows, so this is a relatively small workload. Performance results can vary between runs, and Polars may perform differently when working with larger datasets.
-
-Both Pandas and Polars produced the same main analysis results:
-
-- 1,277 wines had a quality score of 7 or higher.
-- Average red wine quality was approximately 5.636.
-- Average white wine quality was approximately 5.878.
-
-## Rust Ownership Experiment
-
-The project also includes the modified Rust Jupyter notebook:
-
-`rust_vs_python_intro.ipynb`
-
-The notebook was run using the Rust Jupyter kernel and modified to further experiment with Rust ownership and borrowing.
-
-One experiment demonstrates ownership transfer. When a `String` is assigned to another variable, ownership moves to the new variable. The original variable can no longer be used after the move.
-
-Another experiment explores borrowing using references. Instead of transferring ownership, a reference can borrow a value, allowing the original owner to continue using the value.
-
-These experiments helped demonstrate the difference between moving a value and borrowing a value in Rust.
+- `model_comparison.csv`
+- `alcohol_quality_by_type.csv`
 
 ## Project Files
 
-The repository contains:
+| File | Purpose |
+|---|---|
+| `analysis.py` | Data cleaning, analysis, charts, and model evaluation |
+| `polars_analysis.py` | Supplementary analysis of the original data |
+| `test_analysis.py` | Automated tests, including edge cases |
+| `wine_quality_merged.csv` | Original dataset |
+| `wine_quality_distribution.png` | Cleaned quality-score distribution |
+| `alcohol_by_quality.png` | Alcohol distributions by quality and wine type |
+| `model_comparison.csv` | Regression and baseline evaluation metrics |
+| `alcohol_quality_by_type.csv` | Summary statistics and correlations |
+| `rust_vs_python_intro.ipynb` | Earlier Rust ownership and borrowing exercises |
+| `requirements.txt` | Pinned Python dependencies |
+| `.flake8` | Linting configuration |
+| `.github/workflows/tests.yml` | Automated CI checks |
+| `Dockerfile` | Container build instructions |
+| `.dockerignore` | Files excluded from the Docker build context |
+| `docs/screenshots/` | Docker and refactoring evidence |
+| `README.md` | Project findings and instructions |
 
-- `analysis.py` - Pandas data analysis and linear regression
-- `polars_analysis.py` - Polars analysis and performance comparison
-- `wine_quality_merged.csv` - Wine Quality dataset
-- `wine_quality_distribution.png` - Wine quality visualization
-- `rust_vs_python_intro.ipynb` - Modified Rust Jupyter notebook
-- `test_analysis.py` - Automated tests for the analysis workflow
-- `requirements.txt` - Python dependencies
-- `.github/workflows/tests.yml` - GitHub Actions CI workflow
-- `tests_passed.png` - Screenshot showing successful test results
-- `README.md` - Project documentation
+## Run Locally
 
-## Tools and Libraries
-
-The project uses:
-
-- Python
-- Pandas
-- Polars
-- Matplotlib
-- Scikit-learn
-- pytest
-- Rust
-- Jupyter Notebook
-- GitHub Actions
-
-## Setup and Installation
-
-To run this project locally, clone the repository and install the required Python dependencies.
-
-### 1. Clone the Repository
+Use Python 3.13. Run commands from the repository's main directory.
 
 ```bash
 git clone https://github.com/qurbanovkenan77-tech/wine-quality-analysis.git
 cd wine-quality-analysis
-```
-
-### 2. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Run the Pandas Analysis
-
-```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
 python analysis.py
 ```
 
-### 4. Run the Polars Analysis
+The analysis prints findings and regenerates both PNG charts and both result CSVs in the current directory.
+
+To run the supplementary Polars analysis:
 
 ```bash
 python polars_analysis.py
 ```
 
-### 5. Run the Tests
+Dependency versions are recorded in `requirements.txt`. Execution timings vary with hardware and system load.
+
+## Tests and Code Quality
 
 ```bash
-pytest -v
+python -m pytest -v
+python -m black --check analysis.py polars_analysis.py test_analysis.py
+python -m flake8 --config=.flake8 analysis.py polars_analysis.py test_analysis.py
 ```
 
-The required Python packages are listed in `requirements.txt`.
+The 30 tests cover data loading, known summary results, duplicate removal, preservation of input data, empty inputs, missing columns and values, invalid numeric values, unknown wine types, filtering boundaries, outlier handling, a known linear relationship, and the baseline calculation.
 
-## Testing
+GitHub Actions installs dependencies, checks formatting and linting, runs the tests, and executes both analysis scripts on pushes and pull requests to `main`. It can also be triggered manually.
 
-The project includes automated tests using `pytest` to validate the main components of the data analysis workflow.
+## Docker
 
-The tests cover:
+Docker packages the scripts, dataset, Python environment, and dependencies.
 
-- Loading the wine quality dataset
-- Filtering high-quality wines
-- Calculating average quality by wine type
-- Training and evaluating the linear regression model
-- Running the main components together as a complete workflow
+Build and run:
 
-The project contains four core functionality tests and one complete workflow test. All five tests pass successfully.
+```bash
+docker build -t wine-quality-analysis .
+docker run --rm wine-quality-analysis
+```
 
-![All Tests Passing](tests_passed.png)
+Run tests inside the container:
 
-## Continuous Integration
+```bash
+docker run --rm wine-quality-analysis python -m pytest -v
+```
 
-GitHub Actions is configured to automatically run the test suite whenever changes are pushed to the `main` branch or submitted through a pull request.
+The analysis finishes automatically. An exit code of 0 indicates successful completion. All 30 tests also passed inside Docker.
 
-The workflow:
+The default run writes outputs inside the container. With `--rm`, those outputs are removed when the container exits. To retain and copy outputs, use a named container:
 
-- Checks out the repository
-- Sets up Python
-- Installs the dependencies from `requirements.txt`
-- Runs the automated tests using `pytest`
+```bash
+docker run --name wine-quality-export wine-quality-analysis
+docker cp wine-quality-export:/app/model_comparison.csv ./model_comparison.csv
+```
 
-The CI status badge at the top of this README shows the current status of the automated test workflow.
+Use an unused container name when repeating that example.
 
-## Conclusion
+During Docker practice, the commands `docker pull`, `docker images`, `docker run`, `docker ps`, and `docker ps -a` were used. An image is the packaged environment; a container is an instance of that image.
 
-This project explored the Wine Quality dataset using Pandas and Polars. The analysis showed that white wine had a slightly higher average quality score than red wine and that 1,277 wines had a quality rating of 7 or higher.
+Built image:
 
-A simple linear regression model was also used to predict wine quality based on alcohol content. In addition, Pandas and Polars were compared using execution time. For this relatively small dataset, Pandas was faster in the measured operations.
+<img src="docs/screenshots/docker-image.png" alt="Wine analysis image in Docker Desktop" width="700">
 
-The project was also made reproducible and reliable by adding automated testing with pytest and continuous integration with GitHub Actions.
+Successful container completion:
 
-Finally, the Rust Jupyter notebook was modified to experiment with ownership and borrowing, providing practical examples of how Rust manages values and memory.
+<img src="docs/screenshots/docker-run.png" alt="Wine analysis container exited with code 0" width="700">
+
+## Refactoring
+
+The original script was reorganized into focused functions for inspection, plotting, data preparation, and model evaluation. The main workflow now lives in `main()`, and unclear model variables were renamed.
+
+This makes individual steps easier to understand, reuse, and test. The initial refactoring preserved the original calculations: the five existing tests passed and the original MSE remained 0.6044. Later changes introduced cleaning, additional analysis, and the expanded 30-test suite.
+
+[View the initial refactoring commit](https://github.com/qurbanovkenan77-tech/wine-quality-analysis/commit/cf81f29)
+
+<img src="docs/screenshots/refactoring-diff.png" alt="GitHub commit diff showing refactoring of analysis.py" width="800">
+
+## Earlier Project Components
+
+`polars_analysis.py` preserves the earlier analysis of the original, uncleaned dataset. It reports 1,277 high-quality wines, whereas the cleaned Pandas analysis reports 1,009. These counts use different data preparation and should not be treated as contradictory.
+
+The scripts print execution timings, but the current runs are not a controlled performance benchmark between Pandas and Polars.
+
+`rust_vs_python_intro.ipynb` contains earlier exercises on Rust ownership and borrowing. It is supplementary and is not executed by the Python CI workflow or Docker image. Running it requires a separate Rust Jupyter kernel.
+
+## AI Assistance
+
+ChatGPT assisted with refactoring suggestions, test design, Docker and CI configuration, and documentation. Changes were checked through local execution, automated tests, GitHub Actions, and a Docker run.
