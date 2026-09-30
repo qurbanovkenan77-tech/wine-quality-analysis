@@ -1,11 +1,12 @@
 """Analyze wine quality using Pandas and linear regression."""
 
+from sklearn.dummy import DummyRegressor
 import time
 
 import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 
 
@@ -104,21 +105,70 @@ def inspect_data(df):
 
 
 def plot_quality_distribution(df, filename="wine_quality_distribution.png"):
-    """Save a histogram of wine quality scores."""
-    fig, ax = plt.subplots()
+    """Save counts with one bar per integer quality score."""
+    counts = df["quality"].value_counts().sort_index()
 
-    ax.hist(df["quality"], bins=6, edgecolor="black")
-    ax.set_xlabel("Wine Quality")
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.bar(counts.index, counts.values, color="steelblue", edgecolor="black")
+
+    ax.set_xlabel("Wine Quality Score")
     ax.set_ylabel("Number of Wines")
-    ax.set_title("Distribution of Wine Quality")
+    ax.set_title("Wine Quality Distribution After Removing Exact Duplicates")
+    ax.set_xticks(range(3, 10))
+    ax.bar_label(ax.containers[0], padding=3)
+    ax.margins(y=0.15)
 
     fig.tight_layout()
-    fig.savefig(filename)
+    fig.savefig(filename, dpi=150)
     plt.close(fig)
 
 
-def train_model(df):
-    """Fit an alcohol-only regression and return the model and test MSE."""
+def summarize_alcohol_relationship(df):
+    """Summarize the alcohol-quality association for each wine type."""
+    records = []
+
+    for wine_type, group in df.groupby("type"):
+        records.append(
+            {
+                "type": wine_type,
+                "wine_count": len(group),
+                "mean_quality": group["quality"].mean(),
+                "alcohol_quality_correlation": group["alcohol"].corr(group["quality"]),
+            }
+        )
+
+    return pd.DataFrame(records)
+
+
+def plot_alcohol_by_quality(df, filename="alcohol_by_quality.png"):
+    """Compare alcohol distributions across quality scores and wine types."""
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
+
+    for ax, wine_type in zip(axes, ["red", "white"]):
+        group = df.loc[df["type"] == wine_type]
+        scores = sorted(group["quality"].unique())
+        alcohol_groups = [
+            group.loc[group["quality"] == score, "alcohol"].to_numpy()
+            for score in scores
+        ]
+
+        ax.boxplot(alcohol_groups, positions=scores, widths=0.6)
+        ax.set_title(f"{wine_type.title()} Wine (n={len(group):,})")
+        ax.set_xlabel("Wine Quality Score")
+        ax.set_xticks(range(3, 10))
+        ax.set_xlim(2.5, 9.5)
+        ax.grid(axis="y", alpha=0.3)
+
+    axes[0].set_ylabel("Alcohol (% by Volume)")
+    fig.suptitle("Alcohol Content by Quality Score and Wine Type")
+
+    fig.tight_layout()
+    fig.savefig(filename, dpi=150)
+    plt.close(fig)
+
+
+def evaluate_models(df):
+    """Compare regression with a training-mean baseline on the same test set."""
     features = df[["alcohol"]]
     target = df["quality"]
 
@@ -129,12 +179,35 @@ def train_model(df):
         random_state=42,
     )
 
-    model = LinearRegression()
-    model.fit(features_train, target_train)
+    models = {
+        "Mean baseline": DummyRegressor(strategy="mean"),
+        "Alcohol regression": LinearRegression(),
+    }
+    records = []
 
-    predictions = model.predict(features_test)
-    mse = mean_squared_error(target_test, predictions)
+    for name, model in models.items():
+        model.fit(features_train, target_train)
+        predictions = model.predict(features_test)
+        mse = mean_squared_error(target_test, predictions)
 
+        records.append(
+            {
+                "model": name,
+                "MSE": mse,
+                "RMSE": mse**0.5,
+                "MAE": mean_absolute_error(target_test, predictions),
+                "R2": r2_score(target_test, predictions),
+            }
+        )
+
+    results = pd.DataFrame(records).set_index("model")
+    return models["Alcohol regression"], results
+
+
+def train_model(df):
+    """Return the regression model and test MSE for existing callers."""
+    model, results = evaluate_models(df)
+    mse = float(results.loc["Alcohol regression", "MSE"])
     return model, mse
 
 
@@ -146,6 +219,7 @@ def main():
 
     print(f"\nPandas CSV Load Time: {load_time:.6f} seconds")
     inspect_data(df)
+
     original_rows = len(df)
     df = clean_data(df)
 
@@ -157,6 +231,7 @@ def main():
     print("\nOutlier Flags by Wine Type:")
     print(summarize_outliers(df).to_string(index=False))
     print("Flagged observations are retained in the analysis.")
+
     start = time.perf_counter()
     high_quality = get_high_quality_wines(df)
     average_quality = get_average_quality(df)
@@ -171,13 +246,25 @@ def main():
     print(average_quality)
 
     plot_quality_distribution(df)
+    plot_alcohol_by_quality(df)
 
-    _, mse = train_model(df)
+    print("\nAlcohol and Quality by Wine Type:")
+    relationship = summarize_alcohol_relationship(df)
+    print(relationship.round(4).to_string(index=False))
 
-    print("\nMachine Learning - Linear Regression")
-    print("Input: Alcohol")
-    print("Output: Quality")
-    print(f"Mean Squared Error: {mse:.4f}")
+    _, results = evaluate_models(df)
+
+    print("\nModel Comparison on the Same Test Set:")
+    print(results.round(4).to_string())
+
+    baseline_mse = results.loc["Mean baseline", "MSE"]
+    regression_mse = results.loc["Alcohol regression", "MSE"]
+    improvement = 100 * (baseline_mse - regression_mse) / baseline_mse
+
+    print(f"\nMSE reduction versus baseline: {improvement:.2f}%")
+
+    results.to_csv("model_comparison.csv")
+    relationship.to_csv("alcohol_quality_by_type.csv", index=False)
 
 
 if __name__ == "__main__":

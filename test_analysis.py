@@ -6,6 +6,7 @@ from pandas.testing import assert_frame_equal
 
 from analysis import (
     clean_data,
+    evaluate_models,
     get_average_quality,
     get_high_quality_wines,
     load_data,
@@ -203,3 +204,39 @@ def test_complete_cleaned_workflow():
     assert len(outliers) == 22
     assert model.n_features_in_ == 1
     assert 0 <= mse < 1
+
+
+def test_baseline_uses_training_mean():
+    """Verify baseline metrics against a manually calculated example."""
+    df = pd.DataFrame(
+        {
+            "alcohol": list(range(8, 18)),
+            "quality": list(range(10)),
+        }
+    )
+
+    _, results = evaluate_models(df)
+
+    # With 10 rows, test_size=0.2, and random_state=42:
+    # test rows are 8 and 1; all remaining rows are training data.
+    training_quality = [0, 2, 3, 4, 5, 6, 7, 9]
+    test_quality = [8, 1]
+    training_mean = sum(training_quality) / len(training_quality)
+
+    expected_mse = sum((actual - training_mean) ** 2 for actual in test_quality) / len(
+        test_quality
+    )
+
+    expected_mae = sum(abs(actual - training_mean) for actual in test_quality) / len(
+        test_quality
+    )
+
+    baseline = results.loc["Mean baseline"]
+
+    assert baseline["MSE"] == pytest.approx(expected_mse)
+    assert baseline["RMSE"] == pytest.approx(expected_mse**0.5)
+    assert baseline["MAE"] == pytest.approx(expected_mae)
+
+    # The synthetic data have an exact linear relationship.
+    assert results.loc["Alcohol regression", "MSE"] < 1e-10
+    assert results.loc["Alcohol regression", "R2"] == pytest.approx(1.0)
