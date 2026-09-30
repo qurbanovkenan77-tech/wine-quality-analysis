@@ -134,8 +134,7 @@ python -m flake8 --config=.flake8 analysis.py polars_analysis.py test_analysis.p
 
 The 30 tests cover data loading, known summary results, duplicate removal, preservation of input data, empty inputs, missing columns and values, invalid numeric values, unknown wine types, filtering boundaries, outlier handling, a known linear relationship, and the baseline calculation.
 
-GitHub Actions installs dependencies, checks formatting and linting, runs the tests, and executes both analysis scripts on pushes and pull requests to `main`. It can also be triggered manually.
-
+GitHub Actions installs dependencies, checks formatting and linting, runs the tests, and executes both analysis scripts on pushes and pull requests to `main`. It can also be triggered manually. The workflow uses an operating-system matrix to check Python 3.13 on Ubuntu and macOS. It also includes a weekly scheduled run on Mondays at 09:17 UTC.
 ## Docker
 
 Docker packages the scripts, dataset, Python environment, and dependencies.
