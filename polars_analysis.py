@@ -1,7 +1,6 @@
 import time
 import polars as pl
 
-
 # load the dataset and measure load time
 start = time.perf_counter()
 
@@ -28,9 +27,8 @@ print(df.describe())
 print("\nMissing Values:")
 print(df.null_count())
 
-print("\nNumber of Duplicates:")
-print(df.is_duplicated().sum())
-
+print("\nNumber of Duplicate Rows Beyond the First:")
+print(df.height - df.unique().height)
 
 # basic filtering and grouping
 start = time.perf_counter()
@@ -39,11 +37,7 @@ high_quality = df.filter(pl.col("quality") >= 7)
 
 average_quality = (
     df.group_by("type")
-    .agg(
-        pl.col("quality")
-        .mean()
-        .alias("average_quality")
-    )
+    .agg(pl.col("quality").mean().alias("average_quality"))
     .sort("type")
 )
 
